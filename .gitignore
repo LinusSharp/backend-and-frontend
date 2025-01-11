@@ -1,0 +1,28 @@
+# Build Folders
+bin/
+obj/
+
+# Visual Studio user-specific files
+.vs/
+*.user
+*.suo
+*.csproj.user
+*.dbmdl
+*.userprefs
+
+*.msbuild.vscode.json
+*.msbuild.vs.json
+
+*.log
+
+node_modules/
+
+# Mac
+.DS_Store
+
+*.Local.json
+*.local.settings.json
+
+
+
+docker-compose.override.yml
