@@ -11,5 +11,6 @@ namespace MyWebAPI.Data
         }
 
         public DbSet<User> Users => Set<User>();
+        public DbSet<Post> Posts => Set<Post>();
     }
 }
