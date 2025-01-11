@@ -26,6 +26,10 @@ namespace MyWebAPI.Controllers
             {
                 return BadRequest(new { message = "Username already exists." });
             }
+            else if (await _db.Users.AnyAsync(u => u.Email == request.Email))
+            {
+                return BadRequest(new { message = "Email already exists." });
+            }
 
             var hashedPassword = _passwordHasher.HashPassword(request.Password);
 
@@ -33,6 +37,7 @@ namespace MyWebAPI.Controllers
             {
                 Username = request.Username,
                 PasswordHash = hashedPassword,
+                Email = request.Email
             };
 
             _db.Users.Add(user);
@@ -44,15 +49,70 @@ namespace MyWebAPI.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _db.Users.SingleOrDefaultAsync(u => u.Username == request.Username);
+            var user = await _db.Users.SingleOrDefaultAsync(u => u.Username == request.Username && u.Email == request.Email);
             if (user == null)
-                return Unauthorized(new { message = "Invalid username or password." });
+                return Unauthorized(new { message = "Invalid username or email." });
 
             var validPassword = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
             if (!validPassword)
-                return Unauthorized(new { message = "Invalid username or password." });
+                return Unauthorized(new { message = "Invalid password." });
 
             return Ok(new { message = "Login successful." });
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserRequest request)
+        {
+            if (string.IsNullOrEmpty(request.CurrentPassword))
+            {
+                return BadRequest(new { message = "Current password is required." });
+            }
+            
+            var user = await _db.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+
+            if (!string.IsNullOrEmpty(request.CurrentPassword))
+            {
+                var validPassword = _passwordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash);
+                if (!validPassword)
+                {
+                    return Unauthorized(new { message = "Current password is incorrect." });
+                }
+            }
+            
+            if (!string.IsNullOrEmpty(request.NewUsername))
+            {
+                bool usernameExists = await _db.Users.AnyAsync(u => u.Username == request.NewUsername && u.Id != id);
+                if (usernameExists)
+                {
+                    return BadRequest(new { message = "New username is already in use." });
+                }
+
+                user.Username = request.NewUsername;
+            }
+
+            if (!string.IsNullOrEmpty(request.NewEmail))
+            {
+                bool emailExists = await _db.Users.AnyAsync(u => u.Email == request.NewEmail && u.Id != id);
+                if (emailExists)
+                {
+                    return BadRequest(new { message = "New email is already in use." });
+                }
+
+                user.Email = request.NewEmail;
+            }
+
+            if (!string.IsNullOrEmpty(request.NewPassword))
+            {
+                user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+            }
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new { message = "User updated successfully." });
         }
     }
 
@@ -60,11 +120,22 @@ namespace MyWebAPI.Controllers
     {
         public string Username { get; set; } = null!;
         public string Password { get; set; } = null!;
+        public string Email { get; set; } = null!;
     }
 
     public class LoginRequest
     {
         public string Username { get; set; } = null!;
         public string Password { get; set; } = null!;
+        public string Email { get; set; } = null!;
     }
+
+    public class UpdateUserRequest
+    {
+        public string? NewUsername { get; set; }
+        public string? NewEmail { get; set; }
+        public string? CurrentPassword { get; set; }
+        public string? NewPassword { get; set; }
+    }
+
 }
