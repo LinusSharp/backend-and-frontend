@@ -65,7 +65,16 @@ namespace MyWebAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllPosts()
         {
-            var posts = await _db.Posts.ToListAsync();
+            var posts = await _db.Posts
+                .Select(p => new 
+                {
+                    p.Id,
+                    p.Title,
+                    p.Text,
+                    p.UserId
+                })
+                .ToListAsync();
+
             return Ok(posts);
         }
     }
