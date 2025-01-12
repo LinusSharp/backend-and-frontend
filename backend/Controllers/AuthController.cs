@@ -43,13 +43,18 @@ namespace MyWebAPI.Controllers
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
 
-            return Ok(new { message = "Signup successful." });
+            return Ok(new { 
+                message = "Signup successful.", 
+                userId = user.Id 
+            });
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _db.Users.SingleOrDefaultAsync(u => u.Username == request.Username && u.Email == request.Email);
+            var user = await _db.Users.SingleOrDefaultAsync(u => 
+                u.Username == request.Username && u.Email == request.Email);
+
             if (user == null)
                 return Unauthorized(new { message = "Invalid username or email." });
 
@@ -57,7 +62,10 @@ namespace MyWebAPI.Controllers
             if (!validPassword)
                 return Unauthorized(new { message = "Invalid password." });
 
-            return Ok(new { message = "Login successful." });
+            return Ok(new { 
+                message = "Login successful.", 
+                userId = user.Id 
+            });
         }
 
         [HttpPut("{id}")]
